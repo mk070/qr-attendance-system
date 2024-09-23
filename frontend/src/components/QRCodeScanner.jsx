@@ -47,12 +47,13 @@ const QRCodeScanner = () => {
       setErrorMessage('');  // Clear any previous errors
 
       // POST request to mark the student as present
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/scan`, {
+      const response = await axios.post(`${process.env.API_URL}/scan`, {
         name: scanResult.name,
         regNo: scanResult.regNo,
         department: scanResult.department,
         college: scanResult.college,
       });
+      
 
       if (response.status === 200) {
         setSuccessMessage('Attendance marked successfully');
