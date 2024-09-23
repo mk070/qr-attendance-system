@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QrReader } from 'react-qr-reader';
 import { Box, Typography, Grid, Button, CircularProgress, Paper, Table, TableBody, TableCell, TableContainer, TableRow } from '@mui/material';
 import axios from 'axios';
@@ -9,6 +9,19 @@ const QRCodeScanner = () => {
   const [scanning, setScanning] = useState(false);  // Control the scanning state
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');  // Handle error messages
+  const [constraints, setConstraints] = useState({ facingMode: 'environment' });  // Default to rear camera
+
+  // Check for available cameras and adjust the facingMode constraint
+  useEffect(() => {
+    navigator.mediaDevices.enumerateDevices().then((devices) => {
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      if (videoDevices.length > 1) {
+        setConstraints({ facingMode: 'environment' });  // Use rear camera if available
+      } else {
+        setConstraints({ facingMode: 'user' });  // Use front camera if no rear camera
+      }
+    });
+  }, []);
 
   // Handle QR Code Scanning
   const handleScan = (data) => {
@@ -33,8 +46,14 @@ const QRCodeScanner = () => {
   };
 
   const handleError = (error) => {
+    if (error.name === 'NotAllowedError') {
+      setErrorMessage('Camera access was denied. Please allow access to the camera.');
+    } else if (error.name === 'NotFoundError') {
+      setErrorMessage('No camera device found. Please make sure your device has a camera.');
+    } else {
+      setErrorMessage('QR Scan Error: ' + error.message);
+    }
     console.error('QR Scan Error:', error);
-    setErrorMessage('Error during QR scan. Please try again.');
     setLoading(false);
   };
 
@@ -47,14 +66,13 @@ const QRCodeScanner = () => {
       setErrorMessage('');  // Clear any previous errors
 
       // POST request to mark the student as present
-      const response = await axios.post(`${process.env.API_URL}/scan`, {
+      const response = await axios.post(`https://4265-2401-4900-4a96-2910-e8f3-8978-a4a3-3f77.ngrok-free.app/scan`, {
         name: scanResult.name,
         regNo: scanResult.regNo,
         department: scanResult.department,
         college: scanResult.college,
       });
       
-
       if (response.status === 200) {
         setSuccessMessage('Attendance marked successfully');
         setScanResult(null);  // Reset the scanned result
@@ -109,7 +127,7 @@ const QRCodeScanner = () => {
                     handleError(error);
                   }
                 }}
-                constraints={{ facingMode: 'environment' }}
+                constraints={constraints}  // Dynamically set based on available cameras
                 style={{ width: '100%' }}
               />
             </Box>
