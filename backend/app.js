@@ -31,6 +31,10 @@ const initializeExcelFile = () => {
 // Ensure the Excel file exists
 initializeExcelFile();
 
+app.get("/",()=>{
+  res.send(`Backend server is running on http://localhost:${PORT}`)
+})
+
 // Route to trigger QR code email sending
 app.get('/send-qr-codes', (req, res) => {
   try {
