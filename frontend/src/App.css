@@ -1,0 +1,35 @@
+/* App.css */
+.App {
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+
+h1 {
+  color: #2c3e50;
+}
+
+ul {
+  list-style-type: none;
+}
+
+li {
+  background: #ecf0f1;
+  margin: 10px;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+/* App.css */
+body {
+  font-family: 'Roboto', sans-serif;
+}
+
+@media (max-width: 600px) {
+  .MuiTypography-h4 {
+    font-size: 1.8rem;
+  }
+
+  .MuiButton-root {
+    font-size: 0.8rem;
+  }
+}
