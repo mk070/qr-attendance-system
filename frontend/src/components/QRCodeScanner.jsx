@@ -1,107 +1,190 @@
 import React, { useState } from 'react';
 import { QrReader } from 'react-qr-reader';
-import { Box, Typography, Grid, Button, CircularProgress } from '@mui/material';
+import { Box, Typography, Grid, Button, CircularProgress, Paper, Table, TableBody, TableCell, TableContainer, TableRow } from '@mui/material';
 import axios from 'axios';
 
 const QRCodeScanner = () => {
-  const [scanResult, setScanResult] = useState('');
+  const [scanResult, setScanResult] = useState(null);  // Store scanned data as an object
   const [loading, setLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);  // Control the scanning state
   const [successMessage, setSuccessMessage] = useState('');
-  const [presentButtonEnabled, setPresentButtonEnabled] = useState(false); // Control visibility of Present button
+  const [errorMessage, setErrorMessage] = useState('');  // Handle error messages
 
+  // Handle QR Code Scanning
   const handleScan = (data) => {
     if (data) {
       try {
-        const studentData = JSON.parse(data); // QR code contains name and department
-        setScanResult(studentData);
-        setLoading(false); // Stop the loading once data is scanned
-        setPresentButtonEnabled(true); // Enable the "Present" button
+        const studentData = JSON.parse(data);  // Assuming QR code contains JSON with 'name', 'regNo', 'college', 'department'
+        if (studentData.name && studentData.regNo && studentData.college) {
+          studentData.department = studentData.department || 'N/A';  // Optional: Set a default value for department if it's missing
+          setScanResult(studentData);  // Store scanned student data
+          setLoading(false);
+          setErrorMessage('');  // Clear any previous error
+          setScanning(false);  // Stop the scanner
+        } else {
+          throw new Error('Invalid QR code data');
+        }
       } catch (error) {
-        console.error('Error parsing scanned data:', error);
+        setErrorMessage('Failed to parse QR code. Make sure it contains valid JSON.');
+        setScanResult(null);
+        setLoading(false);
       }
     }
   };
 
   const handleError = (error) => {
-    console.error(error);
+    console.error('QR Scan Error:', error);
+    setErrorMessage('Error during QR scan. Please try again.');
     setLoading(false);
   };
 
+  // Mark Attendance as Present
   const handleMarkPresent = async () => {
-    if (!scanResult) return; // No scanned data, do nothing
+    if (!scanResult) return;  // No scanned data, do nothing
 
     try {
       setLoading(true);
-      const response = await axios.post('https://wild-emus-push.loca.lt/scan', {
+      setErrorMessage('');  // Clear any previous errors
+
+      // POST request to mark the student as present
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/scan`, {
         name: scanResult.name,
+        regNo: scanResult.regNo,
         department: scanResult.department,
-        status: 'Present' // Mark as present when clicked
+        college: scanResult.college,
       });
 
       if (response.status === 200) {
         setSuccessMessage('Attendance marked successfully');
-        setPresentButtonEnabled(false); // Disable button after marking present
+        setScanResult(null);  // Reset the scanned result
+      } else if (response.status === 400) {
+        setErrorMessage('Incomplete student data. Please check the scanned QR code.');
       } else {
-        console.error('Unexpected response:', response);
-        setSuccessMessage('Error: Unexpected response from server');
+        throw new Error('Unexpected response from server');
       }
     } catch (error) {
       console.error('Error marking attendance:', error);
-      setSuccessMessage('Error: ' + error.message);
+      setErrorMessage('Error marking attendance: ' + (error.response?.data?.error || error.message));
     } finally {
-      setLoading(false); // Ensure loading is stopped
+      setLoading(false);  // Ensure loading stops
     }
   };
 
   return (
     <Box mt={4}>
       <Typography variant="h4" gutterBottom align="center">
-        Scan QR Code
+        QR Code Attendance Scanner
       </Typography>
 
       <Grid container justifyContent="center">
         <Grid item xs={12} style={{ textAlign: 'center' }}>
-          <Box maxWidth="400px" mx="auto">
-            <QrReader
-              delay={300}
-              onResult={(result, error) => {
-                if (!!result) {
-                  handleScan(result?.text);
-                }
-                if (!!error) {
-                  handleError(error);
-                }
+
+          {/* Show Start Scan Button if not scanning */}
+          {!scanning && !scanResult && (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => {
+                setSuccessMessage('');
+                setErrorMessage('');
+                setScanResult(null);
+                setScanning(true);  // Start scanning when button is clicked
               }}
-              constraints={{ facingMode: 'environment' }}
-              style={{ width: '100%' }}
-            />
-          </Box>
+            >
+              Start Scan
+            </Button>
+          )}
+
+          {/* Show the QR Code Reader if scanning */}
+          {scanning && (
+            <Box maxWidth="400px" mx="auto" mt={2}>
+              <QrReader
+                delay={300}
+                onResult={(result, error) => {
+                  if (!!result) {
+                    handleScan(result?.text);
+                  }
+                  if (!!error) {
+                    handleError(error);
+                  }
+                }}
+                constraints={{ facingMode: 'environment' }}
+                style={{ width: '100%' }}
+              />
+            </Box>
+          )}
         </Grid>
 
+        {/* Display scan results if available */}
         <Grid item xs={12} style={{ textAlign: 'center' }}>
           {loading ? (
             <CircularProgress />
           ) : (
-            <Typography variant="body1" mt={2}>
-              {successMessage || 'Waiting for scan...'}
-            </Typography>
-          )}
-          {scanResult && (
-            <Typography variant="body1" mt={2}>
-              Scanned Data: {scanResult.name} ({scanResult.department})
-            </Typography>
+            <>
+              {errorMessage && (
+                <Typography variant="body1" color="error" mt={2}>
+                  {errorMessage}
+                </Typography>
+              )}
+              {successMessage ? (
+                <Typography variant="body1" color="primary" mt={2}>
+                  {successMessage}
+                </Typography>
+              ) : (
+                scanResult && (
+                  <>
+                    <TableContainer component={Paper} style={{ marginTop: '20px' }}>
+                      <Table>
+                        <TableBody>
+                          <TableRow>
+                            <TableCell>Name</TableCell>
+                            <TableCell>{scanResult.name}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Reg No</TableCell>
+                            <TableCell>{scanResult.regNo}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>College</TableCell>
+                            <TableCell>{scanResult.college}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Department</TableCell>
+                            <TableCell>{scanResult.department}</TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                    {/* Show Mark Present Button */}
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={handleMarkPresent}
+                      disabled={loading || !scanResult}  // Disable button while loading or if no data
+                      style={{ marginTop: '20px' }}
+                    >
+                      Mark Present
+                    </Button>
+                  </>
+                )
+              )}
+            </>
           )}
         </Grid>
 
-        {presentButtonEnabled && (
+        {/* After successfully marking attendance, show the Start Scan button again */}
+        {successMessage && (
           <Grid item xs={12} style={{ textAlign: 'center', marginTop: '20px' }}>
             <Button
               variant="contained"
               color="primary"
-              onClick={handleMarkPresent}
-              disabled={loading} // Disable button while loading
+              onClick={() => {
+                setSuccessMessage('');
+                setErrorMessage('');
+                setScanning(true);  // Restart scanning
+              }}
             >
-              Mark Present
+              Start New Scan
             </Button>
           </Grid>
         )}

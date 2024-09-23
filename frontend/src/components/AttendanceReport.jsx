@@ -1,20 +1,17 @@
-// AttendanceReport.jsx
 import React, { useState, useEffect } from 'react';
-import { Button, Typography, Box, Grid, CircularProgress } from '@mui/material';
+import { Button, Typography, Box, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import axios from 'axios';
 import * as XLSX from 'xlsx';
-import axios from 'axios';  // Use this to fetch data from API
 
 const AttendanceReport = () => {
   const [attendanceData, setAttendanceData] = useState([]);
-  const [loading, setLoading] = useState(true);  // Loading state to show spinner
+  const [loading, setLoading] = useState(true);
 
-  // This effect will later fetch data from the API
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // When the API is ready, replace the URL with the actual API endpoint
-        const response = await axios.get('https://rotten-groups-lie.loca.lt/attendance');
-        setAttendanceData(response.data);  // Update the state with API data
+        const response = await axios.get(`${process.env.API_URL}/attendance`);
+        setAttendanceData(response.data);
       } catch (error) {
         console.error('Error fetching attendance data:', error);
       } finally {
@@ -47,20 +44,35 @@ const AttendanceReport = () => {
       ) : (
         <Grid container spacing={3} justifyContent="center">
           <Grid item xs={12}>
-            <Typography variant="body1">
-              Below is the generated attendance data:
-            </Typography>
-            {attendanceData.length > 0 ? (
-              <ul>
-                {attendanceData.map((entry, index) => (
-                  <li key={index}>
-                    {entry.name} ({entry.department}) - {entry.status}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <Typography variant="body2">No attendance data available.</Typography>
-            )}
+            <Typography variant="body1">Below is the generated attendance data:</Typography>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Reg No</TableCell>
+                    <TableCell>College</TableCell>
+                    <TableCell>Department</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Whatsapp Number</TableCell>
+                    <TableCell>Attendance Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {attendanceData.map((entry, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{entry.Name}</TableCell>
+                      <TableCell>{entry["Reg No"]}</TableCell>
+                      <TableCell>{entry.College}</TableCell>
+                      <TableCell>{entry.Department}</TableCell>
+                      <TableCell>{entry["Domain Email ID (College ID)"]}</TableCell>
+                      <TableCell>{entry["Whatsapp Number"]}</TableCell>
+                      <TableCell>{entry.status}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Grid>
 
           <Grid item xs={12} style={{ textAlign: 'center' }}>

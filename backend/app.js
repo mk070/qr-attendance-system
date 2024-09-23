@@ -5,6 +5,9 @@ const path = require('path');
 const xlsx = require('xlsx');
 const cors = require('cors');
 
+const { generateQRCodes, zipQRCodes } = require('./qrGenerator');  // Import the QR generator functions
+const { sendEmailsWithQRCodes } = require('./emailSender');  // Import the email sender
+
 const app = express();
 const PORT = 3001;
 
@@ -12,15 +15,15 @@ const PORT = 3001;
 app.use(bodyParser.json());
 app.use(cors());
 
-// Set up the file path for the Excel file
-const filePath = path.join(__dirname, 'attendance.xlsx');
+// Path to the Excel file
+const filePath = path.join(__dirname, 'Final NameList - GenAI Hackathon Registration - SNSCT.xlsx');
 
 // Initialize the Excel file if it doesn't exist
 const initializeExcelFile = () => {
   if (!fs.existsSync(filePath)) {
     const wb = xlsx.utils.book_new();
     const ws = xlsx.utils.json_to_sheet([]);
-    xlsx.utils.book_append_sheet(wb, ws, 'Attendance');
+    xlsx.utils.book_append_sheet(wb, ws, 'SNSCT');
     xlsx.writeFile(wb, filePath);
   }
 };
@@ -28,44 +31,81 @@ const initializeExcelFile = () => {
 // Ensure the Excel file exists
 initializeExcelFile();
 
+// Route to trigger QR code email sending
+app.get('/send-qr-codes', (req, res) => {
+  try {
+    sendEmailsWithQRCodes();
+    res.json({ message: 'QR codes are being sent to students.' });
+  } catch (error) {
+    console.error('Error sending QR codes:', error);
+    res.status(500).json({ error: 'Failed to send QR codes.' });
+  }
+});
+
 // Function to add or update student attendance in the Excel sheet
+// Function to add or update student attendance in the Excel sheet
+// Function to add or update student attendance in the "SNSCT" sheet
 const updateAttendance = (studentData) => {
   const workbook = xlsx.readFile(filePath);
-  const worksheet = workbook.Sheets['Attendance'];
-  const attendanceData = xlsx.utils.sheet_to_json(worksheet);
 
-  // Check if the student is already in the sheet
-  const studentIndex = attendanceData.findIndex((entry) => entry.name === studentData.name);
-
-  if (studentIndex > -1) {
-    // Update existing student's attendance status
-    attendanceData[studentIndex] = studentData;
-  } else {
-    // Add new student
-    attendanceData.push(studentData);
+  // Access the "SNSCT" sheet
+  const worksheet = workbook.Sheets["SNSCT"];
+  if (!worksheet) {
+    console.error("Error: 'SNSCT' sheet not found");
+    return;
   }
 
+  let attendanceData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+
+  // Ensure the 'attendance-status' column exists for all entries
+  attendanceData = attendanceData.map(entry => ({
+    ...entry,
+    'attendance-status': entry['attendance-status'] || 'Absent'  // Default to 'Absent' if no status
+  }));
+
+  // Check if the student exists by matching Name and Reg No
+  const studentIndex = attendanceData.findIndex(
+    entry => entry.Name === studentData.name && entry["Reg No"] === studentData.regNo
+  );
+
+  if (studentIndex > -1) {
+    // Update the student's attendance status to 'Present'
+    attendanceData[studentIndex]['attendance-status'] = studentData.status;
+  } else {
+    // If not found, you could add a new student or log an error
+    console.error(`Student not found: ${studentData.name}`);
+  }
+
+  // Write the updated data back to the "SNSCT" sheet
   const updatedSheet = xlsx.utils.json_to_sheet(attendanceData);
-  workbook.Sheets['Attendance'] = updatedSheet;
+  workbook.Sheets["SNSCT"] = updatedSheet;
   xlsx.writeFile(workbook, filePath);
 };
 
+
 // Route to handle QR code scanning and updating attendance
 app.post('/scan', (req, res) => {
-  const { name, department } = req.body;
+  // Log incoming data for debugging
+  console.log('Received data:', req.body);
+
+  const { name, regNo, college, department } = req.body;  // Include the college field
 
   // Validate that the required fields are present
-  if (!name || !department) {
+  if (!name || !regNo || !college || !department) {
+    console.error('Incomplete student data:', req.body);
     return res.status(400).json({ error: 'Incomplete student data' });
   }
 
   const studentData = {
     name,
+    regNo,
+    college,  // Include college in the student data
     department,
     status: 'Present'  // Mark the student as "Present"
   };
 
   try {
+    // Call function to update attendance in the database or file
     updateAttendance(studentData);
     res.json({ message: 'Attendance marked successfully' });
   } catch (error) {
@@ -74,18 +114,44 @@ app.post('/scan', (req, res) => {
   }
 });
 
-// Route to download the attendance Excel file
+// Route to fetch attendance data and include the attendance status
 app.get('/attendance', (req, res) => {
   try {
     if (fs.existsSync(filePath)) {
-      res.download(filePath, 'attendance.xlsx');
+      const workbook = xlsx.readFile(filePath);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      let attendanceData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+
+      // Modify or add 'status' column for each student
+      attendanceData = attendanceData.map((student) => ({
+        ...student,
+        status: student.status || 'Absent', // Default to 'Absent' if no status is found
+      }));
+
+      res.json(attendanceData); // Send the attendance data as JSON to the frontend
     } else {
       res.status(404).json({ error: 'Attendance file not found' });
     }
   } catch (error) {
-    console.error('Error downloading attendance file:', error);
-    res.status(500).json({ error: 'Failed to download attendance file' });
+    console.error('Error fetching attendance data:', error);
+    res.status(500).json({ error: 'Failed to fetch attendance data' });
   }
+});
+
+// Route to generate QR codes
+app.get('/generate-qr-codes', (req, res) => {
+  try {
+    generateQRCodes();
+    res.json({ message: 'QR codes are being generated.' });
+  } catch (error) {
+    console.error('Error generating QR codes:', error);
+    res.status(500).json({ error: 'Failed to generate QR codes.' });
+  }
+});
+
+// Route to download all QR codes as a zip file
+app.get('/download-qr-codes', (req, res) => {
+  zipQRCodes(res);
 });
 
 // Start the server

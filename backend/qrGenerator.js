@@ -5,7 +5,7 @@ const path = require('path');
 const archiver = require('archiver');
 
 // File path for the Excel sheet containing student data
-const excelFilePath = path.join(__dirname, 'students.xlsx');
+const excelFilePath = path.join(__dirname, 'Final NameList - GenAI Hackathon Registration - SNSCT.xlsx');
 
 // Folder to store generated QR codes
 const qrCodesFolder = path.join(__dirname, 'qrcodes');
@@ -14,6 +14,16 @@ const qrCodesFolder = path.join(__dirname, 'qrcodes');
 if (!fs.existsSync(qrCodesFolder)) {
   fs.mkdirSync(qrCodesFolder);
 }
+
+// Function to clean and validate JSON data
+const cleanJsonData = (data) => {
+  try {
+    return JSON.stringify(data);
+  } catch (err) {
+    console.error('Error converting data to JSON:', err);
+    return null; // Return null if JSON conversion fails
+  }
+};
 
 // Read Excel and generate QR codes for all students
 const generateQRCodes = () => {
@@ -26,25 +36,28 @@ const generateQRCodes = () => {
       name: student.Name,
       regNo: student["Reg No"],
       college: student.College,
-      department: student.Department,
-      email: student["Domain Email ID (College ID)"],
-      whatsapp: student["Whatsapp Number"]
+      department: student.Department
     };
 
-    const qrCodeData = JSON.stringify(studentData);
+    // Clean and validate the student data
+    const qrCodeData = cleanJsonData(studentData);
 
-    // Generate QR code and save it as a PNG file
-    QRCode.toFile(
-      path.join(qrCodesFolder, `student_${index + 1}_${student.Name}.png`),
-      qrCodeData,
-      (err) => {
-        if (err) {
-          console.error(`Error generating QR code for ${studentData.name}:`, err);
-        } else {
-          console.log(`QR code generated for ${studentData.name}`);
+    if (qrCodeData) {
+      // Generate QR code and save it as a PNG file
+      QRCode.toFile(
+        path.join(qrCodesFolder, `${student["Reg No"]}.png`),
+        qrCodeData,
+        (err) => {
+          if (err) {
+            console.error(`Error generating QR code for ${studentData.name}:`, err);
+          } else {
+            console.log(`QR code generated for ${studentData.name}`);
+          }
         }
-      }
-    );
+      );
+    } else {
+      console.error(`Failed to generate QR code for ${student.Name}`);
+    }
   });
 };
 
