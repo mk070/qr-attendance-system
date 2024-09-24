@@ -27,9 +27,12 @@ const QRCodeScanner = () => {
   const handleScan = (data) => {
     if (data) {
       try {
-        const studentData = JSON.parse(data);  // Assuming QR code contains JSON with 'name', 'regNo', 'college', 'department'
+        const studentData = JSON.parse(data);  // Assuming QR code contains JSON with 'name', 'regNo', 'college', 'department', 'round1', 'round2', 'round3'
         if (studentData.name && studentData.regNo && studentData.college) {
           studentData.department = studentData.department || 'N/A';  // Optional: Set a default value for department if it's missing
+          studentData.round1 = studentData.round1 || 'Pending';  // Default 'Pending' if round1 is missing
+          studentData.round2 = studentData.round2 || 'Pending';  // Default 'Pending' if round2 is missing
+          studentData.round3 = studentData.round3 || 'Pending';  // Default 'Pending' if round3 is missing
           setScanResult(studentData);  // Store scanned student data
           setLoading(false);
           setErrorMessage('');  // Clear any previous error
@@ -51,9 +54,9 @@ const QRCodeScanner = () => {
     } else if (error.name === 'NotFoundError') {
       setErrorMessage('No camera device found. Please make sure your device has a camera.');
     } else {
-      setErrorMessage('QR Scan Error: ' + error.message);
+      setErrorMessage('Scan QR: ' + error.message);
     }
-    console.error('QR Scan Error:', error);
+    console.error('Scan QR:', error);
     setLoading(false);
   };
 
@@ -66,11 +69,14 @@ const QRCodeScanner = () => {
       setErrorMessage('');  // Clear any previous errors
 
       // POST request to mark the student as present
-      const response = await axios.post(`https://362d-2401-4900-4ac3-b0b5-8174-4931-1027-1cd1.ngrok-free.app/scan`, {
+      const response = await axios.post(`https://your-ngrok-url.ngrok-free.app/scan`, {
         name: scanResult.name,
         regNo: scanResult.regNo,
         department: scanResult.department,
         college: scanResult.college,
+        round1: scanResult.round1,
+        round2: scanResult.round2,
+        round3: scanResult.round3
       });
       
       if (response.status === 200) {
@@ -170,6 +176,18 @@ const QRCodeScanner = () => {
                           <TableRow>
                             <TableCell>Department</TableCell>
                             <TableCell>{scanResult.department}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Round 1</TableCell>
+                            <TableCell>{scanResult.round1}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Round 2</TableCell>
+                            <TableCell>{scanResult.round2}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Round 3</TableCell>
+                            <TableCell>{scanResult.round3}</TableCell>
                           </TableRow>
                         </TableBody>
                       </Table>

@@ -32,11 +32,18 @@ const generateQRCodes = () => {
   const students = xlsx.utils.sheet_to_json(worksheet);
 
   students.forEach((student, index) => {
+    // Ensure all necessary fields are present and include round details
     const studentData = {
       name: student.Name,
       regNo: student["Reg No"],
       college: student.College,
-      department: student.Department
+      department: student.Department,
+      email: student["Domain Email ID (College ID)"] || 'N/A',  // Default to 'N/A' if missing
+      whatsapp: student["Whatsapp Number"] || 'N/A',  // Default to 'N/A' if missing
+      attendanceStatus: student["attendance-status"] || 'Absent',  // Default to 'Absent' if missing
+      round1: student.round1 || 'Pending',  // Default to 'Pending' if missing
+      round2: student.round2 || 'Pending',  // Default to 'Pending' if missing
+      round3: student.round3 || 'Pending'   // Default to 'Pending' if missing
     };
 
     // Clean and validate the student data

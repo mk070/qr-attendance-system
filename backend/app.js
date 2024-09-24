@@ -59,10 +59,13 @@ const updateAttendance = (studentData) => {
 
   let attendanceData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
 
-  // Ensure the 'attendance-status' column exists for all entries
+  // Ensure the 'attendance-status', 'round1', 'round2', and 'round3' columns exist for all entries
   attendanceData = attendanceData.map(entry => ({
     ...entry,
-    'attendance-status': entry['attendance-status'] || 'Absent'  // Default to 'Absent' if no status
+    'attendance-status': entry['attendance-status'] || 'Absent',  // Default to 'Absent' if no status
+    'round1': entry['round1'] || 'Pending',  // Default to 'Pending' for round1
+    'round2': entry['round2'] || 'Pending',  // Default to 'Pending' for round2
+    'round3': entry['round3'] || 'Pending'   // Default to 'Pending' for round3
   }));
 
   // Check if the student exists by matching Name and Reg No
@@ -71,8 +74,19 @@ const updateAttendance = (studentData) => {
   );
 
   if (studentIndex > -1) {
-    // Update the student's attendance status to 'Present'
+    // Update the student's attendance status to 'Present' and rounds statuses
     attendanceData[studentIndex]['attendance-status'] = studentData.status;
+    
+    // If round statuses are provided, update them
+    if (studentData.round1) {
+      attendanceData[studentIndex]['round1'] = studentData.round1;
+    }
+    if (studentData.round2) {
+      attendanceData[studentIndex]['round2'] = studentData.round2;
+    }
+    if (studentData.round3) {
+      attendanceData[studentIndex]['round3'] = studentData.round3;
+    }
   } else {
     // If not found, you could add a new student or log an error
     console.error(`Student not found: ${studentData.name}`);
@@ -83,6 +97,7 @@ const updateAttendance = (studentData) => {
   workbook.Sheets["SNSCT"] = updatedSheet;
   xlsx.writeFile(workbook, filePath);
 };
+
 
 
 // Route to handle QR code scanning and updating attendance
