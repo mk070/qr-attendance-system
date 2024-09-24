@@ -16,7 +16,7 @@ app.use(bodyParser.json());
 app.use(cors());
 
 // Path to the Excel file
-const filePath = path.join(__dirname, 'Final NameList - GenAI Hackathon Registration - SNSCT.xlsx');
+const filePath = path.join(__dirname, 'Final NameList - GenAI Hackathon Registration.xlsx');
 
 // Initialize the Excel file if it doesn't exist
 const initializeExcelFile = () => {
@@ -46,8 +46,6 @@ app.get('/send-qr-codes', (req, res) => {
   }
 });
 
-// Function to add or update student attendance in the Excel sheet
-// Function to add or update student attendance in the Excel sheet
 // Function to add or update student attendance in the "SNSCT" sheet
 const updateAttendance = (studentData) => {
   const workbook = xlsx.readFile(filePath);
@@ -121,27 +119,27 @@ app.post('/scan', (req, res) => {
 // Route to fetch attendance data and include the attendance status
 app.get('/attendance', (req, res) => {
   try {
-    if (fs.existsSync(filePath)) {
-      const workbook = xlsx.readFile(filePath);
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      let attendanceData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+    // Read the Excel file
+    const workbook = xlsx.readFile(filePath);
 
-      // Modify or add 'status' column for each student
-      attendanceData = attendanceData.map((student) => ({
-        ...student,
-        status: student.status || 'Absent', // Default to 'Absent' if no status is found
-      }));
+    // Get the sheet by name (in this case, assuming 'SNSCT' is the sheet name)
+    const sheetName = 'SNSCT'; // Ensure this matches the name of your target sheet
+    const worksheet = workbook.Sheets[sheetName];
 
-      res.json(attendanceData); // Send the attendance data as JSON to the frontend
-    } else {
-      res.status(404).json({ error: 'Attendance file not found' });
+    if (!worksheet) {
+      return res.status(404).json({ error: `Sheet '${sheetName}' not found in the Excel file.` });
     }
+
+    // Convert sheet data to JSON format
+    const attendanceData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+    console.log("attendanceData:",attendanceData)
+    // Send the data as JSON response
+    res.json(attendanceData);
   } catch (error) {
-    console.error('Error fetching attendance data:', error);
-    res.status(500).json({ error: 'Failed to fetch attendance data' });
+    console.error('Error reading the Excel file:', error);
+    res.status(500).json({ error: 'Failed to fetch attendance data.' });
   }
 });
-
 // Route to generate QR codes
 app.get('/generate-qr-codes', (req, res) => {
   try {

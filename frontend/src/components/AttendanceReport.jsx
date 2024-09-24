@@ -4,14 +4,17 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 
 const AttendanceReport = () => {
-  const [attendanceData, setAttendanceData] = useState([]);
+  const [attendanceData, setAttendanceData] = useState([]); // Initialize with empty array
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`${process.env.API_URL}/attendance`);
-        setAttendanceData(response.data);
+        const response = await axios.get(`https://4265-2401-4900-4a96-2910-e8f3-8978-a4a3-3f77.ngrok-free.app/attendance`);
+        console.log('API Response:', response.data); // Log API response for debugging
+        
+        // Ensure response data is an array
+        setAttendanceData(Array.isArray(response.data) ? response.data : [response.data]);
       } catch (error) {
         console.error('Error fetching attendance data:', error);
       } finally {
@@ -61,13 +64,13 @@ const AttendanceReport = () => {
                 <TableBody>
                   {attendanceData.map((entry, index) => (
                     <TableRow key={index}>
-                      <TableCell>{entry.Name}</TableCell>
-                      <TableCell>{entry["Reg No"]}</TableCell>
-                      <TableCell>{entry.College}</TableCell>
-                      <TableCell>{entry.Department}</TableCell>
-                      <TableCell>{entry["Domain Email ID (College ID)"]}</TableCell>
-                      <TableCell>{entry["Whatsapp Number"]}</TableCell>
-                      <TableCell>{entry.status}</TableCell>
+                      <TableCell>{entry.Name || 'N/A'}</TableCell>
+                      <TableCell>{entry["Reg No"] || 'N/A'}</TableCell>
+                      <TableCell>{entry.College || 'N/A'}</TableCell>
+                      <TableCell>{entry.Department || 'N/A'}</TableCell>
+                      <TableCell>{entry["Domain Email ID (College ID)"] || 'N/A'}</TableCell>
+                      <TableCell>{entry["Whatsapp Number"] || 'N/A'}</TableCell>
+                      <TableCell>{entry.status || 'Absent'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

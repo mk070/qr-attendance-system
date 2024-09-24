@@ -5,7 +5,7 @@ const path = require('path');
 const archiver = require('archiver');
 
 // File path for the Excel sheet containing student data
-const excelFilePath = path.join(__dirname, 'Final NameList - GenAI Hackathon Registration - SNSCT.xlsx');
+const excelFilePath = path.join(__dirname, 'Final NameList - GenAI Hackathon Registration.xlsx');
 
 // Folder to store generated QR codes
 const qrCodesFolder = path.join(__dirname, 'qrcodes');
