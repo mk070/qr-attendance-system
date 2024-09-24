@@ -47,6 +47,8 @@ app.get('/send-qr-codes', (req, res) => {
 });
 
 // Function to add or update student attendance in the "SNSCT" sheet
+
+
 const updateAttendance = (studentData) => {
   const workbook = xlsx.readFile(filePath);
 
@@ -59,13 +61,13 @@ const updateAttendance = (studentData) => {
 
   let attendanceData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
 
-  // Ensure the 'attendance-status', 'round1', 'round2', and 'round3' columns exist for all entries
+  // Ensure the 'Attendance-Status', 'Round1', 'Round2', and 'Round3' columns exist for all entries
   attendanceData = attendanceData.map(entry => ({
     ...entry,
-    'attendance-status': entry['attendance-status'] || 'Absent',  // Default to 'Absent' if no status
-    'round1': entry['round1'] || 'Pending',  // Default to 'Pending' for round1
-    'round2': entry['round2'] || 'Pending',  // Default to 'Pending' for round2
-    'round3': entry['round3'] || 'Pending'   // Default to 'Pending' for round3
+    'Attendance-Status': entry['Attendance-Status'] || 'Absent',  // Default to 'Absent' if no status
+    'Round1': entry['Round1'] || 'Pending',  // Default to 'Pending' for Round1
+    'Round2': entry['Round2'] || 'Pending',  // Default to 'Pending' for Round2
+    'Round3': entry['Round3'] || 'Pending'   // Default to 'Pending' for Round3
   }));
 
   // Check if the student exists by matching Name and Reg No
@@ -75,17 +77,17 @@ const updateAttendance = (studentData) => {
 
   if (studentIndex > -1) {
     // Update the student's attendance status to 'Present' and rounds statuses
-    attendanceData[studentIndex]['attendance-status'] = studentData.status;
-    
+    attendanceData[studentIndex]['Attendance-Status'] = studentData.status;
+
     // If round statuses are provided, update them
     if (studentData.round1) {
-      attendanceData[studentIndex]['round1'] = studentData.round1;
+      attendanceData[studentIndex]['Round1'] = studentData.round1;
     }
     if (studentData.round2) {
-      attendanceData[studentIndex]['round2'] = studentData.round2;
+      attendanceData[studentIndex]['Round2'] = studentData.round2;
     }
     if (studentData.round3) {
-      attendanceData[studentIndex]['round3'] = studentData.round3;
+      attendanceData[studentIndex]['Round3'] = studentData.round3;
     }
   } else {
     // If not found, you could add a new student or log an error
@@ -98,6 +100,7 @@ const updateAttendance = (studentData) => {
   xlsx.writeFile(workbook, filePath);
 };
 
+module.exports = { updateAttendance };
 
 
 // Route to handle QR code scanning and updating attendance

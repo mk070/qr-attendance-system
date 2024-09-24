@@ -69,7 +69,7 @@ const QRCodeScanner = () => {
       setErrorMessage('');  // Clear any previous errors
 
       // POST request to mark the student as present
-      const response = await axios.post(`https://b543-2401-4900-4ac8-c5b1-21dc-a76c-55fe-25cb.ngrok-free.app/scan`, {
+      const response = await axios.post(`https://7419-106-197-33-76.ngrok-free.app/scan`, {
         name: scanResult.name,
         regNo: scanResult.regNo,
         department: scanResult.department,
